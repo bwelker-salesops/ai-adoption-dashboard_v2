@@ -1,0 +1,615 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AI Adoption in SaaS Startups — Tech vs Non-Tech Staff</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.4/dist/chart.umd.min.js"></script>
+<link href="https://fonts.googleapis.com/css2?family=Instrument+Serif&family=DM+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet">
+<style>
+  :root {
+    --bg: #f5f6f8;
+    --surface: #ffffff;
+    --surface-2: #f0f1f4;
+    --border: #e2e4ea;
+    --border-hover: #cccfd8;
+    --text: #1a1d26;
+    --text-dim: #6b7084;
+    --text-mid: #484d60;
+    --tech: #4f46e5;
+    --tech-soft: rgba(79,70,229,0.08);
+    --nontech: #0891b2;
+    --nontech-soft: rgba(8,145,178,0.08);
+    --accent: #d946a8;
+    --accent-soft: rgba(217,70,168,0.08);
+    --warn: #d97706;
+    --radius: 10px;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    font-weight: 400;
+    min-height: 100vh;
+    line-height: 1.5;
+  }
+
+  .container {
+    max-width: 1100px;
+    margin: 0 auto;
+    padding: 0 1.5rem;
+  }
+
+  /* ---- HEADER ---- */
+  header {
+    padding: 2.5rem 0 0.8rem;
+    animation: fadeIn 0.5s ease-out;
+  }
+
+  .tag {
+    display: inline-block;
+    font-size: 0.62rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.14em;
+    color: var(--tech);
+    background: var(--tech-soft);
+    padding: 0.25rem 0.7rem;
+    border-radius: 100px;
+    margin-bottom: 0.6rem;
+  }
+
+  header h1 {
+    font-family: 'Instrument Serif', serif;
+    font-size: 2.2rem;
+    font-weight: 400;
+    line-height: 1.15;
+    letter-spacing: -0.02em;
+    color: var(--text);
+  }
+
+  header h1 em {
+    font-style: normal;
+    background: linear-gradient(135deg, var(--tech), var(--nontech));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+  }
+
+  .subtitle {
+    margin-top: 0.4rem;
+    color: var(--text-dim);
+    font-size: 0.88rem;
+    max-width: 600px;
+  }
+
+  /* ---- CONTROLS ---- */
+  .controls {
+    display: flex;
+    gap: 0.4rem;
+    flex-wrap: wrap;
+    margin: 1rem 0;
+    animation: fadeIn 0.5s ease-out 0.05s both;
+  }
+
+  .pill {
+    padding: 0.35rem 0.9rem;
+    border-radius: 100px;
+    border: 1px solid var(--border);
+    background: var(--surface);
+    color: var(--text-dim);
+    font-family: inherit;
+    font-size: 0.75rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s;
+  }
+
+  .pill:hover { border-color: var(--border-hover); color: var(--text-mid); }
+  .pill.active-tech { background: var(--tech-soft); border-color: var(--tech); color: var(--tech); }
+  .pill.active-nontech { background: var(--nontech-soft); border-color: var(--nontech); color: var(--nontech); }
+  .pill.active-all { background: var(--accent-soft); border-color: var(--accent); color: var(--accent); }
+
+  /* ---- KPI ROW ---- */
+  .kpi-row {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: 0.6rem;
+    margin-bottom: 0.6rem;
+    animation: fadeIn 0.5s ease-out 0.08s both;
+  }
+
+  .kpi {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 0.85rem 1rem;
+    transition: border-color 0.2s;
+  }
+
+  .kpi:hover { border-color: var(--border-hover); }
+
+  .kpi-value {
+    font-family: 'Instrument Serif', serif;
+    font-size: 1.6rem;
+    line-height: 1;
+  }
+
+  .kpi-value.tech-c { color: var(--tech); }
+  .kpi-value.nontech-c { color: var(--nontech); }
+  .kpi-value.accent-c { color: var(--accent); }
+  .kpi-value.warn-c { color: var(--warn); }
+
+  .kpi-label {
+    font-size: 0.62rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--text-dim);
+    margin-top: 0.25rem;
+  }
+
+  .kpi-sub {
+    font-size: 0.7rem;
+    color: var(--text-mid);
+    margin-top: 0.1rem;
+  }
+
+  /* ---- CHART GRID ---- */
+  .chart-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 0.6rem;
+    margin-bottom: 0.6rem;
+  }
+
+  .card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 1rem 1.2rem;
+    animation: fadeIn 0.4s ease-out both;
+  }
+
+  .card:nth-child(1) { animation-delay: 0.1s; }
+  .card:nth-child(2) { animation-delay: 0.14s; }
+  .card-full { grid-column: 1 / -1; }
+
+  .card-head {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 0.6rem;
+  }
+
+  .card-title {
+    font-size: 0.65rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--text-dim);
+  }
+
+  .legend {
+    display: flex;
+    gap: 0.8rem;
+    font-size: 0.68rem;
+    color: var(--text-mid);
+  }
+
+  .legend span::before {
+    content: '';
+    display: inline-block;
+    width: 7px; height: 7px;
+    border-radius: 50%;
+    margin-right: 4px;
+    vertical-align: middle;
+  }
+
+  .legend .l-tech::before { background: var(--tech); }
+  .legend .l-nontech::before { background: var(--nontech); }
+
+  .card canvas { width: 100% !important; }
+
+  /* ---- INSIGHT STRIP ---- */
+  .insight-strip {
+    display: grid;
+    grid-template-columns: repeat(3, 1fr);
+    gap: 0.6rem;
+    margin-bottom: 0.6rem;
+    animation: fadeIn 0.4s ease-out 0.2s both;
+  }
+
+  .insight {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    padding: 0.9rem 1rem;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .insight::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 2px;
+  }
+
+  .insight:nth-child(1)::before { background: var(--tech); }
+  .insight:nth-child(2)::before { background: var(--nontech); }
+  .insight:nth-child(3)::before { background: var(--accent); }
+
+  .insight-num {
+    font-family: 'Instrument Serif', serif;
+    font-size: 1.15rem;
+    line-height: 1;
+    margin-bottom: 0.2rem;
+  }
+
+  .insight-text {
+    font-size: 0.78rem;
+    color: var(--text-dim);
+    line-height: 1.4;
+  }
+
+  /* ---- TABLE ---- */
+  .table-card {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    overflow: hidden;
+    margin-bottom: 1.5rem;
+    animation: fadeIn 0.4s ease-out 0.25s both;
+  }
+
+  .table-head { padding: 0.9rem 1.2rem 0.5rem; }
+
+  table { width: 100%; border-collapse: collapse; }
+
+  th {
+    text-align: left;
+    padding: 0.5rem 1.2rem;
+    font-size: 0.6rem;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    color: var(--text-dim);
+    border-bottom: 1px solid var(--border);
+    font-weight: 500;
+    background: var(--surface-2);
+  }
+
+  td {
+    padding: 0.55rem 1.2rem;
+    font-size: 0.8rem;
+    border-bottom: 1px solid var(--border);
+    font-variant-numeric: tabular-nums;
+    color: var(--text-mid);
+    transition: background 0.15s;
+  }
+
+  tr:last-child td { border-bottom: none; }
+  tr:hover td { background: var(--surface-2); }
+  td:first-child { color: var(--text); font-weight: 500; }
+
+  .bar-cell { position: relative; min-width: 100px; }
+
+  .bar-bg {
+    position: absolute;
+    left: 1.2rem; top: 50%;
+    transform: translateY(-50%);
+    height: 5px;
+    border-radius: 3px;
+    opacity: 0.3;
+    transition: width 0.6s ease-out;
+  }
+
+  .bar-bg.tech-bar { background: var(--tech); }
+  .bar-bg.nontech-bar { background: var(--nontech); }
+
+  .dept-type {
+    display: inline-block;
+    font-size: 0.58rem;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    padding: 0.12rem 0.4rem;
+    border-radius: 4px;
+  }
+
+  .dept-type.t { background: var(--tech-soft); color: var(--tech); }
+  .dept-type.nt { background: var(--nontech-soft); color: var(--nontech); }
+
+  footer {
+    text-align: center;
+    padding: 1rem 0 2rem;
+    color: var(--text-dim);
+    font-size: 0.68rem;
+    opacity: 0.6;
+  }
+
+  @keyframes fadeIn {
+    from { opacity: 0; transform: translateY(8px); }
+    to   { opacity: 1; transform: translateY(0); }
+  }
+
+  @media (max-width: 768px) {
+    header h1 { font-size: 1.6rem; }
+    .kpi-row { grid-template-columns: 1fr 1fr; }
+    .chart-grid { grid-template-columns: 1fr; }
+    .chart-grid .card-full { grid-column: auto; }
+    .insight-strip { grid-template-columns: 1fr; }
+  }
+</style>
+</head>
+<body>
+
+<div class="container">
+
+  <header>
+    <div class="tag">2024 – 2025 Data</div>
+    <h1>AI Adoption in SaaS Startups<br><em>Technical vs Non-Technical</em> Staff</h1>
+    <p class="subtitle">
+      How engineering, product &amp; data teams compare to sales, marketing &amp; G&amp;A
+      in adopting AI tools — modeled from industry research by SaaS Capital, OpenAI, Worklytics, and others.
+    </p>
+  </header>
+
+  <div class="controls">
+    <button class="pill active-all" data-view="all">All Departments</button>
+    <button class="pill" data-view="tech">Technical Staff</button>
+    <button class="pill" data-view="nontech">Non-Technical Staff</button>
+  </div>
+
+  <div class="kpi-row" id="kpis"></div>
+
+  <div class="chart-grid">
+    <div class="card">
+      <div class="card-head">
+        <span class="card-title">Adoption Rate by Quarter</span>
+        <div class="legend"><span class="l-tech">Tech Staff</span><span class="l-nontech">Non-Tech Staff</span></div>
+      </div>
+      <canvas id="adoptionChart" height="160"></canvas>
+    </div>
+    <div class="card">
+      <div class="card-head">
+        <span class="card-title">Top AI Use Cases</span>
+      </div>
+      <canvas id="useCaseChart" height="160"></canvas>
+    </div>
+    <div class="card card-full">
+      <div class="card-head">
+        <span class="card-title">Weekly Hours Saved per Employee (by department)</span>
+        <div class="legend"><span class="l-tech">Tech</span><span class="l-nontech">Non-Tech</span></div>
+      </div>
+      <canvas id="hoursChart" height="110"></canvas>
+    </div>
+  </div>
+
+  <div class="insight-strip">
+    <div class="insight">
+      <div class="insight-num" style="color:var(--tech)">95%</div>
+      <div class="insight-text">of developers now use AI tools at least weekly, with 75% relying on AI for half or more of their work</div>
+    </div>
+    <div class="insight">
+      <div class="insight-num" style="color:var(--nontech)">+36%</div>
+      <div class="insight-text">growth in coding-related AI messages from non-engineering teams over 6 months — role boundaries are blurring</div>
+    </div>
+    <div class="insight">
+      <div class="insight-num" style="color:var(--accent)">3.25%</div>
+      <div class="insight-text">monthly churn on AI tools — much higher than traditional SaaS, signaling experimentation over commitment</div>
+    </div>
+  </div>
+
+  <div class="table-card">
+    <div class="table-head">
+      <span class="card-title">Department Breakdown</span>
+    </div>
+    <table>
+      <thead>
+        <tr>
+          <th>Department</th>
+          <th>Type</th>
+          <th>Adoption %</th>
+          <th>Avg Tools</th>
+          <th>Hrs Saved / Wk</th>
+          <th>Top Tool</th>
+          <th>Satisfaction</th>
+        </tr>
+      </thead>
+      <tbody id="deptTable"></tbody>
+    </table>
+  </div>
+
+</div>
+
+<footer>
+  Single HTML file · Chart.js · Zero backend
+  · Data modeled from SaaS Capital, OpenAI Enterprise Report, Pragmatic Engineer, Worklytics, Cledara
+</footer>
+
+<script>
+const DATA = {
+  quarters: ["Q1 '24", "Q2 '24", "Q3 '24", "Q4 '24", "Q1 '25", "Q2 '25"],
+  adoption: {
+    tech:    [72, 78, 83, 88, 92, 95],
+    nontech: [28, 34, 41, 48, 55, 62],
+  },
+  useCases: {
+    labels: ["Code gen / review", "Content writing", "Data analysis", "Customer support", "Research", "Internal docs"],
+    tech:    [89, 35, 72, 18, 65, 48],
+    nontech: [8,  74, 45, 62, 58, 55],
+  },
+  departments: [
+    { name: "Engineering",       type: "tech",    adoption: 96, tools: 3.8, hours: 8.2, topTool: "GitHub Copilot / Claude Code", satisfaction: 4.2 },
+    { name: "Data / Analytics",  type: "tech",    adoption: 91, tools: 3.2, hours: 6.5, topTool: "ChatGPT / Claude",            satisfaction: 4.0 },
+    { name: "Product",           type: "tech",    adoption: 85, tools: 2.6, hours: 5.1, topTool: "Claude / Notion AI",          satisfaction: 3.9 },
+    { name: "DevOps / Infra",    type: "tech",    adoption: 88, tools: 2.4, hours: 4.8, topTool: "Claude Code / Copilot",       satisfaction: 3.7 },
+    { name: "Marketing",         type: "nontech", adoption: 68, tools: 2.8, hours: 5.5, topTool: "ChatGPT / Jasper",            satisfaction: 3.8 },
+    { name: "Sales",             type: "nontech", adoption: 58, tools: 2.1, hours: 3.8, topTool: "Gong AI / ChatGPT",           satisfaction: 3.5 },
+    { name: "Customer Success",  type: "nontech", adoption: 62, tools: 1.9, hours: 3.4, topTool: "Intercom AI / ChatGPT",       satisfaction: 3.6 },
+    { name: "G&A / Operations",  type: "nontech", adoption: 45, tools: 1.4, hours: 2.1, topTool: "ChatGPT / Copilot",           satisfaction: 3.2 },
+    { name: "HR / People",       type: "nontech", adoption: 42, tools: 1.2, hours: 1.8, topTool: "ChatGPT",                     satisfaction: 3.1 },
+    { name: "Finance",           type: "nontech", adoption: 48, tools: 1.5, hours: 2.4, topTool: "ChatGPT / Excel Copilot",     satisfaction: 3.3 },
+  ],
+};
+
+let activeView = "all";
+
+Chart.defaults.color = '#6b7084';
+Chart.defaults.borderColor = 'rgba(0,0,0,0.06)';
+Chart.defaults.font.family = "'DM Sans', sans-serif";
+Chart.defaults.font.size = 11;
+
+const TC = '#4f46e5', NC = '#0891b2';
+let adoptionChart, useCaseChart, hoursChart;
+
+function renderControls() {
+  document.querySelectorAll('.pill').forEach(btn => {
+    btn.className = 'pill';
+    if (btn.dataset.view === activeView) {
+      btn.classList.add(activeView === 'tech' ? 'active-tech' : activeView === 'nontech' ? 'active-nontech' : 'active-all');
+    }
+  });
+}
+
+function filteredDepts() {
+  if (activeView === 'all') return DATA.departments;
+  return DATA.departments.filter(d => d.type === activeView);
+}
+
+function renderKPIs() {
+  const depts = filteredDepts();
+  const avg = (key) => (depts.reduce((s, d) => s + d[key], 0) / depts.length);
+  const colorClass = activeView === 'tech' ? 'tech-c' : activeView === 'nontech' ? 'nontech-c' : 'accent-c';
+
+  document.getElementById('kpis').innerHTML = `
+    <div class="kpi">
+      <div class="kpi-value ${colorClass}">${avg('adoption').toFixed(0)}%</div>
+      <div class="kpi-label">Avg Adoption Rate</div>
+      <div class="kpi-sub">weekly+ AI usage</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-value ${colorClass}">${avg('tools').toFixed(1)}</div>
+      <div class="kpi-label">Avg AI Tools / Person</div>
+      <div class="kpi-sub">active subscriptions</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-value ${colorClass}">${avg('hours').toFixed(1)}h</div>
+      <div class="kpi-label">Hours Saved / Week</div>
+      <div class="kpi-sub">per employee avg</div>
+    </div>
+    <div class="kpi">
+      <div class="kpi-value warn-c">${avg('satisfaction').toFixed(1)}/5</div>
+      <div class="kpi-label">Satisfaction Score</div>
+      <div class="kpi-sub">self-reported</div>
+    </div>
+  `;
+}
+
+function createCharts() {
+  adoptionChart = new Chart(document.getElementById('adoptionChart'), {
+    type: 'line',
+    data: {
+      labels: DATA.quarters,
+      datasets: [
+        { label: 'Tech', data: DATA.adoption.tech, borderColor: TC, backgroundColor: TC+'12', fill: true, tension: 0.4, pointRadius: 3, pointHoverRadius: 6, borderWidth: 2 },
+        { label: 'Non-Tech', data: DATA.adoption.nontech, borderColor: NC, backgroundColor: NC+'12', fill: true, tension: 0.4, pointRadius: 3, pointHoverRadius: 6, borderWidth: 2 },
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: { y: { min: 0, max: 100, ticks: { callback: v => v+'%' } } },
+      interaction: { mode: 'index', intersect: false }
+    }
+  });
+
+  useCaseChart = new Chart(document.getElementById('useCaseChart'), {
+    type: 'bar',
+    data: {
+      labels: DATA.useCases.labels,
+      datasets: [
+        { label: 'Tech Staff', data: DATA.useCases.tech, backgroundColor: TC+'88', borderRadius: 3, borderSkipped: false },
+        { label: 'Non-Tech Staff', data: DATA.useCases.nontech, backgroundColor: NC+'88', borderRadius: 3, borderSkipped: false },
+      ]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false, indexAxis: 'y',
+      plugins: { legend: { position:'bottom', labels:{ padding:10, usePointStyle:true, pointStyleWidth:7, font:{size:10} } } },
+      scales: { x: { max: 100, ticks: { callback: v => v+'%' } } }
+    }
+  });
+
+  const depts = DATA.departments;
+  hoursChart = new Chart(document.getElementById('hoursChart'), {
+    type: 'bar',
+    data: {
+      labels: depts.map(d => d.name),
+      datasets: [{
+        data: depts.map(d => d.hours),
+        backgroundColor: depts.map(d => d.type==='tech' ? TC+'66' : NC+'66'),
+        hoverBackgroundColor: depts.map(d => d.type==='tech' ? TC : NC),
+        borderRadius: 5, borderSkipped: false,
+      }]
+    },
+    options: {
+      responsive: true, maintainAspectRatio: false,
+      plugins: { legend: { display: false } },
+      scales: { y: { beginAtZero: true, ticks: { callback: v => v+'h' } } }
+    }
+  });
+}
+
+function updateCharts() {
+  const showT = activeView==='all'||activeView==='tech';
+  const showN = activeView==='all'||activeView==='nontech';
+  adoptionChart.data.datasets[0].hidden = !showT;
+  adoptionChart.data.datasets[1].hidden = !showN;
+  adoptionChart.update('active');
+  useCaseChart.data.datasets[0].hidden = !showT;
+  useCaseChart.data.datasets[1].hidden = !showN;
+  useCaseChart.update('active');
+
+  const depts = filteredDepts();
+  hoursChart.data.labels = depts.map(d => d.name);
+  hoursChart.data.datasets[0].data = depts.map(d => d.hours);
+  hoursChart.data.datasets[0].backgroundColor = depts.map(d => d.type==='tech'? TC+'66': NC+'66');
+  hoursChart.data.datasets[0].hoverBackgroundColor = depts.map(d => d.type==='tech'? TC: NC);
+  hoursChart.update('active');
+}
+
+function renderTable() {
+  const depts = filteredDepts();
+  document.getElementById('deptTable').innerHTML = depts.map(d => {
+    const stars = '★'.repeat(Math.round(d.satisfaction)) + '☆'.repeat(5-Math.round(d.satisfaction));
+    return `<tr>
+      <td>${d.name}</td>
+      <td><span class="dept-type ${d.type==='tech'?'t':'nt'}">${d.type==='tech'?'Tech':'Non-Tech'}</span></td>
+      <td class="bar-cell"><div class="bar-bg ${d.type==='tech'?'tech-bar':'nontech-bar'}" style="width:${d.adoption*0.55}px"></div>${d.adoption}%</td>
+      <td>${d.tools}</td>
+      <td>${d.hours}h</td>
+      <td style="font-size:0.75rem">${d.topTool}</td>
+      <td style="color:var(--warn);font-size:0.78rem" title="${d.satisfaction}/5">${stars}</td>
+    </tr>`;
+  }).join('');
+}
+
+function update() {
+  renderControls();
+  renderKPIs();
+  updateCharts();
+  renderTable();
+}
+
+document.querySelectorAll('.pill').forEach(btn => {
+  btn.addEventListener('click', () => { activeView = btn.dataset.view; update(); });
+});
+
+renderControls();
+renderKPIs();
+createCharts();
+renderTable();
+</script>
+</body>
+</html>
